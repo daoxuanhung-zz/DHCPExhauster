@@ -4,9 +4,7 @@
 # 16/08/2018 13:25
 
 from scapy.all import *
-import string, binascii, signal, sys, threading, socket, struct, getopt
-from sys import stdout
-import threading, time, datetime
+import threading, time, datetime, socket, binascii
 
 def randomMAC():
     # from DHCPPig
